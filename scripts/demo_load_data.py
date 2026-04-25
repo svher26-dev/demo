@@ -21,12 +21,12 @@ spark.conf.set(f"spark.sql.catalog.{CATALOG}", "org.apache.iceberg.spark.SparkCa
 spark.conf.set(f"spark.sql.catalog.{CATALOG}.catalog-impl", "software.amazon.s3tables.iceberg.S3TablesCatalog")
 spark.conf.set(f"spark.sql.catalog.{CATALOG}.warehouse", TABLE_BUCKET_ARN)
 
-print("=== Loading demo_customers (100,000 records) ===")
+print("=== Loading demo_customers (500,000 records) ===")
 first_names = F.array([F.lit(n) for n in ["James","Mary","John","Patricia","Robert","Jennifer","Michael","Linda","William","Barbara","David","Susan","Richard","Jessica","Joseph","Sarah","Thomas","Karen","Charles","Lisa"]])
 last_names  = F.array([F.lit(n) for n in ["Smith","Johnson","Williams","Brown","Jones","Garcia","Miller","Davis","Rodriguez","Martinez","Hernandez","Lopez","Gonzalez","Wilson","Anderson","Thomas","Taylor","Moore","Jackson","Martin"]])
 cities      = F.array([F.lit(c) for c in ["New York","Los Angeles","Chicago","Houston","Phoenix","Philadelphia","San Antonio","San Diego","Dallas","San Jose","Austin","Jacksonville","Fort Worth","Columbus","Charlotte","Indianapolis","San Francisco","Seattle","Denver","Nashville"]])
 
-customers_df = spark.range(1, 100001).select(
+customers_df = spark.range(1, 500001).select(
     F.concat(F.lit("CUST-"), F.lpad(F.col("id").cast("string"), 6, "0")).alias("customer_id"),
     F.element_at(first_names, (F.col("id") % 20 + 1).cast("integer")).alias("first_name"),
     F.element_at(last_names,  (F.col("id") % 20 + 1).cast("integer")).alias("last_name"),
@@ -40,13 +40,15 @@ customers_df = spark.range(1, 100001).select(
 customers_df.writeTo(f"{CATALOG}.{NAMESPACE}.demo_customers").using("iceberg").createOrReplace()
 print(f"Loaded {customers_df.count()} customers")
 
-print("=== Loading demo_products (10,000 records) ===")
+print("=== Loading demo_products (50,000 records) ===")
 categories = F.array([F.lit(c) for c in ["Electronics","Clothing","Books","Home & Garden","Sports","Toys","Automotive","Food","Health","Beauty"]])
+brands      = F.array([F.lit(b) for b in ["BrandA","BrandB","BrandC","BrandD","BrandE","BrandF","BrandG","BrandH","BrandI","BrandJ"]])
 
-products_df = spark.range(1, 10001).select(
+products_df = spark.range(1, 50001).select(
     F.concat(F.lit("PROD-"), F.lpad(F.col("id").cast("string"), 5, "0")).alias("product_id"),
     F.concat(F.lit("Product "), F.col("id").cast("string")).alias("product_name"),
     F.element_at(categories, (F.col("id") % 10 + 1).cast("integer")).alias("category"),
+    F.element_at(brands, (F.col("id") % 10 + 1).cast("integer")).alias("brand"),
     F.round((F.col("id") % 995 + 5).cast("double"), 2).alias("price"),
     (F.col("id") % 500 + 10).cast("integer").alias("stock_quantity"),
     F.date_sub(F.current_date(), (F.col("id") % 730).cast("integer")).cast("timestamp").alias("created_at")
@@ -54,13 +56,13 @@ products_df = spark.range(1, 10001).select(
 products_df.writeTo(f"{CATALOG}.{NAMESPACE}.demo_products").using("iceberg").createOrReplace()
 print(f"Loaded {products_df.count()} products")
 
-print("=== Loading demo_orders (200,000 records) ===")
+print("=== Loading demo_orders (1,000,000 records) ===")
 statuses = F.array([F.lit(s) for s in ["completed","pending","shipped","cancelled","returned"]])
 
-orders_df = spark.range(1, 200001).select(
+orders_df = spark.range(1, 1000001).select(
     F.concat(F.lit("ORD-"), F.lpad(F.col("id").cast("string"), 7, "0")).alias("order_id"),
-    F.concat(F.lit("CUST-"), F.lpad(((F.col("id") % 100000) + 1).cast("string"), 6, "0")).alias("customer_id"),
-    F.concat(F.lit("PROD-"), F.lpad(((F.col("id") % 10000) + 1).cast("string"), 5, "0")).alias("product_id"),
+    F.concat(F.lit("CUST-"), F.lpad(((F.col("id") % 500000) + 1).cast("string"), 6, "0")).alias("customer_id"),
+    F.concat(F.lit("PROD-"), F.lpad(((F.col("id") % 50000) + 1).cast("string"), 5, "0")).alias("product_id"),
     (F.col("id") % 5 + 1).cast("integer").alias("quantity"),
     F.round(((F.col("id") % 995) + 5).cast("double"), 2).alias("amount"),
     F.element_at(statuses, (F.col("id") % 5 + 1).cast("integer")).alias("status"),
@@ -70,4 +72,4 @@ orders_df.writeTo(f"{CATALOG}.{NAMESPACE}.demo_orders").using("iceberg").createO
 print(f"Loaded {orders_df.count()} orders")
 
 job.commit()
-print("=== All tables loaded successfully! ===")
+print("=== All 1.55M records loaded successfully! ===")
