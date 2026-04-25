@@ -52,7 +52,7 @@ products  = spark.table(f"{CATALOG}.{DATABASE}.demo_products")
 
 print(f"  customers : {customers.count():,}")
 print(f"  orders    : {orders.count():,}")
-print(f"  products  : {customers.count():,}")
+print(f"  products  : {products.count():,}")
 
 # ── curated_customer_summary ────────────────────────────────────────────────
 print("=== Building curated_customer_summary ===")
