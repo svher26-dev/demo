@@ -14,9 +14,9 @@ spark = glueContext.spark_session
 job = Job(glueContext)
 job.init(args['JOB_NAME'], args)
 
-# Glue 5.0 with --datalake-formats iceberg pre-configures glue_catalog automatically.
-# Do NOT override it with spark.conf.set (static config) — just reference it directly.
-CATALOG  = "glue_catalog"
+# In Glue 5.0, the default catalog is spark_catalog (backed by the Glue Data Catalog).
+# Iceberg tables registered there are accessible via spark_catalog.database.table.
+CATALOG  = "spark_catalog"
 DATABASE = "demo_database"
 
 # Aurora PostgreSQL connection (IAM auth)
@@ -52,7 +52,7 @@ products  = spark.table(f"{CATALOG}.{DATABASE}.demo_products")
 
 print(f"  customers : {customers.count():,}")
 print(f"  orders    : {orders.count():,}")
-print(f"  products  : {products.count():,}")
+print(f"  products  : {customers.count():,}")
 
 # ── curated_customer_summary ────────────────────────────────────────────────
 print("=== Building curated_customer_summary ===")
