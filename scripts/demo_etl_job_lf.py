@@ -14,15 +14,10 @@ spark = glueContext.spark_session
 job = Job(glueContext)
 job.init(args['JOB_NAME'], args)
 
-# Read via Glue catalog — Lake Formation governs access to these tables
-TABLE_BUCKET_ARN = "arn:aws:s3tables:us-east-1:256097482558:bucket/demo-bucket"
-CATALOG   = "glue_catalog"
-DATABASE  = "demo_database"
-
-spark.conf.set(f"spark.sql.catalog.{CATALOG}", "org.apache.iceberg.spark.SparkCatalog")
-spark.conf.set(f"spark.sql.catalog.{CATALOG}.catalog-impl", "org.apache.iceberg.aws.glue.GlueCatalog")
-spark.conf.set(f"spark.sql.catalog.{CATALOG}.warehouse", TABLE_BUCKET_ARN)
-spark.conf.set(f"spark.sql.catalog.{CATALOG}.io-impl", "org.apache.iceberg.aws.s3.S3FileIO")
+# Glue 5.0 with --datalake-formats iceberg pre-configures glue_catalog automatically.
+# Do NOT override it with spark.conf.set (static config) — just reference it directly.
+CATALOG  = "glue_catalog"
+DATABASE = "demo_database"
 
 # Aurora PostgreSQL connection (IAM auth)
 AURORA_HOST = "database-1.cluster-cih4ce2i22u1.us-east-1.rds.amazonaws.com"
