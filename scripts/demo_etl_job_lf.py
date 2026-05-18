@@ -140,5 +140,34 @@ daily_orders.write.jdbc(
 )
 print("  Written: curated_daily_orders")
 
+# ── curated_product_performance ─────────────────────────────────────────────
+print("=== Building curated_product_performance ===")
+
+product_orders = orders.join(
+    products.select("product_id", "product_name", "category", "price"),
+    on="product_id",
+    how="inner"
+)
+
+product_perf = product_orders.groupBy("product_id", "product_name", "category", "price").agg(
+    F.count("order_id").alias("total_orders"),
+    F.sum("quantity").alias("total_units_sold"),
+    F.round(F.sum("amount"), 2).alias("total_revenue"),
+    F.round(F.avg("amount"), 2).alias("avg_order_value"),
+    F.sum(F.when(F.col("status") == "returned", 1).otherwise(0)).alias("returned_count"),
+)
+
+product_perf = product_perf.withColumn(
+    "return_rate_pct",
+    F.round((F.col("returned_count") / F.col("total_orders")) * 100, 2)
+)
+
+print(f"  rows: {product_perf.count():,}")
+product_perf.write.jdbc(
+    url=jdbc_url, table="curated_product_performance",
+    mode="overwrite", properties=jdbc_props
+)
+print("  Written: curated_product_performance")
+
 job.commit()
-print("=== ETL complete (Lake Formation governed) — 3 curated tables written to Aurora ===")
+print("=== ETL complete (Lake Formation governed) — 4 curated tables written to Aurora ===")
